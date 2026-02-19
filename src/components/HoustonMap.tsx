@@ -9,9 +9,10 @@ const HOUSTON_CENTER = { lat: 29.7604, lng: -95.3698 };
 type Props = {
   billboards: BillboardListItem[];
   onSelectBillboard: (billboard: BillboardListItem) => void;
+  focusBillboard?: BillboardListItem | null;
 };
 
-export default function HoustonMap({ billboards, onSelectBillboard }: Props) {
+export default function HoustonMap({ billboards, onSelectBillboard, focusBillboard }: Props) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -20,9 +21,16 @@ export default function HoustonMap({ billboards, onSelectBillboard }: Props) {
   const onSelectRef = useRef(onSelectBillboard);
   onSelectRef.current = onSelectBillboard;
 
-  // Initialize map once when script is ready
+  // Initialize map once when script is ready and container has dimensions (avoids grey map)
   useEffect(() => {
     if (!mapDivRef.current || !process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) return;
+
+    const isContainerReady = (): boolean => {
+      const el = mapDivRef.current;
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width >= 100 && rect.height >= 100;
+    };
 
     const initMap = (): google.maps.Map | null => {
       if (
@@ -32,6 +40,7 @@ export default function HoustonMap({ billboards, onSelectBillboard }: Props) {
       ) {
         return null;
       }
+      if (!isContainerReady()) return null;
       if (mapInstanceRef.current) return mapInstanceRef.current;
       const map = new google.maps.Map(mapDivRef.current, {
         center: HOUSTON_CENTER,
@@ -54,7 +63,21 @@ export default function HoustonMap({ billboards, onSelectBillboard }: Props) {
     window.addEventListener('google-maps-ready', handleReady);
     const pollId = setInterval(() => {
       if (initMap()) clearInterval(pollId);
-    }, 100);
+    }, 150);
+
+    // Init when container gets dimensions (e.g. after layout)
+    const el = mapDivRef.current;
+    if (el && typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => {
+        if (initMap()) ro.disconnect();
+      });
+      ro.observe(el);
+      return () => {
+        window.removeEventListener('google-maps-ready', handleReady);
+        clearInterval(pollId);
+        ro.disconnect();
+      };
+    }
 
     return () => {
       window.removeEventListener('google-maps-ready', handleReady);
@@ -97,6 +120,13 @@ export default function HoustonMap({ billboards, onSelectBillboard }: Props) {
       markersRef.current = [];
     };
   }, [billboards, mapReady]);
+
+  // Pan to billboard when "View on map" is used
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !mapReady || !focusBillboard) return;
+    map.panTo({ lat: focusBillboard.lat, lng: focusBillboard.lng });
+  }, [focusBillboard, mapReady]);
 
   const hasMapsKey = typeof process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY === 'string' && process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY.length > 0;
 

@@ -6,6 +6,7 @@ import type { BillboardListItem } from '@/types/billboard';
 type Props = {
   billboard: BillboardListItem | null;
   onClose: () => void;
+  onViewOnMap?: () => void;
 };
 
 function strProp(p: Record<string, unknown> | null, key: string): string {
@@ -23,7 +24,7 @@ function numProp(p: Record<string, unknown> | null, key: string): number | null 
   return Number.isNaN(n) ? null : n;
 }
 
-export default function BillboardDetailPanel({ billboard, onClose }: Props) {
+export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }: Props) {
   const [permitDetailsOpen, setPermitDetailsOpen] = useState(false);
 
   if (!billboard) {
@@ -64,62 +65,94 @@ export default function BillboardDetailPanel({ billboard, onClose }: Props) {
           Close
         </button>
       </div>
-      <dl className="space-y-2 text-sm">
-        <div>
-          <dt className="font-medium text-neutral-600">Name</dt>
-          <dd className="text-neutral-900">{billboard.name ?? '—'}</dd>
+
+      {onViewOnMap && (
+        <div className="mb-3">
+          <button
+            type="button"
+            onClick={onViewOnMap}
+            className="w-full py-2 px-3 rounded-md border border-neutral-300 bg-white text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            View on map
+          </button>
         </div>
-        <div>
-          <dt className="font-medium text-neutral-600">Vendor</dt>
-          <dd className="text-neutral-900">{billboard.vendor ?? '—'}</dd>
-        </div>
-        <div>
-          <dt className="font-medium text-neutral-600">Address</dt>
-          <dd className="text-neutral-900">
-            {[billboard.address, billboard.zipcode].filter(Boolean).join(', ') || '—'}
-          </dd>
-        </div>
-        {locate ? (
+      )}
+
+      <section className="mb-4">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Unit details</h3>
+        <dl className="space-y-2 text-sm">
           <div>
-            <dt className="font-medium text-neutral-600">Location</dt>
-            <dd className="text-neutral-900">{locate}</dd>
+            <dt className="font-medium text-neutral-600">Name</dt>
+            <dd className="text-neutral-900">{billboard.name ?? '—'}</dd>
           </div>
-        ) : null}
-        {hasDimensions ? (
           <div>
-            <dt className="font-medium text-neutral-600">Dimensions</dt>
+            <dt className="font-medium text-neutral-600">Vendor</dt>
+            <dd className="text-neutral-900">{billboard.vendor ?? '—'}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-neutral-600">Address</dt>
             <dd className="text-neutral-900">
-              {w1 != null && w1 > 0 && h1 != null && h1 > 0
-                ? `${w1} ft × ${h1} ft`
-                : w1 != null && w1 > 0
-                  ? `${w1} ft wide`
-                  : h1 != null && h1 > 0
-                    ? `${h1} ft tall`
-                    : ''}
-              {hgt1 != null && hgt1 > 0 &&
-                (hasDimensions && (w1 != null || h1 != null) ? ` · Pole ${hgt1} ft` : `Pole height ${hgt1} ft`)}
+              {[billboard.address, billboard.zipcode].filter(Boolean).join(', ') || '—'}
             </dd>
           </div>
-        ) : null}
-        {faces != null && faces > 0 ? (
           <div>
-            <dt className="font-medium text-neutral-600">Faces</dt>
-            <dd className="text-neutral-900">{faces}</dd>
+            <dt className="font-medium text-neutral-600">Zip code</dt>
+            <dd className="text-neutral-900">{billboard.zipcode ?? '—'}</dd>
           </div>
-        ) : null}
-        {projectNo ? (
           <div>
-            <dt className="font-medium text-neutral-600">Project #</dt>
-            <dd className="text-neutral-900">{projectNo}</dd>
+            <dt className="font-medium text-neutral-600">Board type</dt>
+            <dd className="text-neutral-900">{billboard.board_type ?? '—'}</dd>
           </div>
-        ) : null}
-        <div>
-          <dt className="font-medium text-neutral-600">Coordinates</dt>
-          <dd className="text-neutral-700 font-mono text-xs">
-            {billboard.lat.toFixed(5)}, {billboard.lng.toFixed(5)}
-          </dd>
-        </div>
-      </dl>
+          <div>
+            <dt className="font-medium text-neutral-600">Traffic tier</dt>
+            <dd className="text-neutral-900">{billboard.traffic_tier ?? '—'}</dd>
+          </div>
+          <div>
+            <dt className="font-medium text-neutral-600">Price tier</dt>
+            <dd className="text-neutral-900">{billboard.price_tier ?? '—'}</dd>
+          </div>
+          {locate ? (
+            <div>
+              <dt className="font-medium text-neutral-600">Location</dt>
+              <dd className="text-neutral-900">{locate}</dd>
+            </div>
+          ) : null}
+          {hasDimensions ? (
+            <div>
+              <dt className="font-medium text-neutral-600">Dimensions</dt>
+              <dd className="text-neutral-900">
+                {w1 != null && w1 > 0 && h1 != null && h1 > 0
+                  ? `${w1} ft × ${h1} ft`
+                  : w1 != null && w1 > 0
+                    ? `${w1} ft wide`
+                    : h1 != null && h1 > 0
+                      ? `${h1} ft tall`
+                      : ''}
+                {hgt1 != null && hgt1 > 0 &&
+                  (hasDimensions && (w1 != null || h1 != null) ? ` · Pole ${hgt1} ft` : `Pole height ${hgt1} ft`)}
+              </dd>
+            </div>
+          ) : null}
+          {faces != null && faces > 0 ? (
+            <div>
+              <dt className="font-medium text-neutral-600">Faces</dt>
+              <dd className="text-neutral-900">{faces}</dd>
+            </div>
+          ) : null}
+          {projectNo ? (
+            <div>
+              <dt className="font-medium text-neutral-600">Project #</dt>
+              <dd className="text-neutral-900">{projectNo}</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt className="font-medium text-neutral-600">Coordinates</dt>
+            <dd className="text-neutral-700 font-mono text-xs">
+              {billboard.lat.toFixed(5)}, {billboard.lng.toFixed(5)}
+            </dd>
+          </div>
+        </dl>
+      </section>
       {hasPermitDetails ? (
         <div className="mt-4 pt-4 border-t border-neutral-200">
           <button
