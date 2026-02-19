@@ -53,6 +53,24 @@ export async function GET(request: Request) {
   const houstonId = getHoustonCityId();
 
   const supabase = createServerSupabaseClient();
+  
+  // Build base query for count
+  let countQuery = supabase
+    .from("billboards")
+    .select("*", { count: "exact", head: true })
+    .eq("city_id", houstonId);
+
+  if (boardType != null && boardType !== "") {
+    countQuery = countQuery.eq("board_type", boardType);
+  }
+  if (trafficTier != null && trafficTier !== "") {
+    countQuery = countQuery.eq("traffic_tier", trafficTier);
+  }
+  if (priceTier != null && priceTier !== "") {
+    countQuery = countQuery.eq("price_tier", priceTier);
+  }
+
+  // Build query for data
   let query = supabase
     .from("billboards")
     .select("id, name, vendor, address, zipcode, source_properties, latitude, longitude, board_type, traffic_tier, price_tier, image_url")
@@ -69,10 +87,18 @@ export async function GET(request: Request) {
     query = query.eq("price_tier", priceTier);
   }
 
-  const { data, error } = await query;
+  // Execute both queries in parallel
+  const [{ data, error }, { count, error: countError }] = await Promise.all([
+    query,
+    countQuery,
+  ]);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (countError) {
+    return NextResponse.json({ error: countError.message }, { status: 500 });
   }
 
   const billboards: BillboardListItem[] = (data ?? []).map((row: Record<string, unknown>) => ({
@@ -90,5 +116,5 @@ export async function GET(request: Request) {
     image_url: (row.image_url as string | null) ?? null,
   }));
 
-  return NextResponse.json({ billboards });
+  return NextResponse.json({ billboards, totalCount: count ?? 0 });
 }

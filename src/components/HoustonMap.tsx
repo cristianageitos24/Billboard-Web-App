@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import type { BillboardListItem } from '@/types/billboard';
 
@@ -86,10 +86,16 @@ export default function HoustonMap({ billboards, onSelectBillboard, focusBillboa
   }, []);
 
   // Add markers and clustering when map is ready and billboards are available
+  // Use stable dependency (billboard IDs) to avoid recreation on sort changes
+  const billboardIds = useMemo(() => {
+    return billboards.map(b => b.id).sort().join(',');
+  }, [billboards]);
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !mapReady || !billboards.length) return;
 
+    // Clean up existing markers and clusterer
     if (clustererRef.current) {
       clustererRef.current.clearMarkers();
       clustererRef.current = null;
@@ -97,29 +103,69 @@ export default function HoustonMap({ billboards, onSelectBillboard, focusBillboa
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
 
-    const markers: google.maps.Marker[] = billboards.map((b) => {
-      const marker = new google.maps.Marker({
-        position: { lat: b.lat, lng: b.lng },
-        map,
-        title: b.name ?? b.address ?? b.id,
-      });
-      marker.addListener('click', () => {
-        onSelectRef.current(b);
-      });
-      return marker;
-    });
-    markersRef.current = markers;
+    // Chunked marker creation to prevent main thread blocking
+    const CHUNK_SIZE = 120;
+    let currentIndex = 0;
+    const allMarkers: google.maps.Marker[] = [];
+    let clusterer: MarkerClusterer | null = null;
+    let cancelled = false;
 
-    const clusterer = new MarkerClusterer({ map, markers });
-    clustererRef.current = clusterer;
+    const createChunk = () => {
+      if (cancelled) return;
+
+      const endIndex = Math.min(currentIndex + CHUNK_SIZE, billboards.length);
+      const chunk = billboards.slice(currentIndex, endIndex);
+
+      // Create markers for this chunk
+      const chunkMarkers: google.maps.Marker[] = chunk.map((b) => {
+        const marker = new google.maps.Marker({
+          position: { lat: b.lat, lng: b.lng },
+          map,
+          title: b.name ?? b.address ?? b.id,
+        });
+        marker.addListener('click', () => {
+          onSelectRef.current(b);
+        });
+        return marker;
+      });
+
+      allMarkers.push(...chunkMarkers);
+      markersRef.current = allMarkers;
+
+      // Initialize or update clusterer with all markers so far
+      if (!clusterer) {
+        clusterer = new MarkerClusterer({ map, markers: allMarkers });
+        clustererRef.current = clusterer;
+      } else {
+        clusterer.addMarkers(chunkMarkers);
+      }
+
+      currentIndex = endIndex;
+
+      // Continue with next chunk if there are more billboards
+      if (currentIndex < billboards.length) {
+        // Use requestIdleCallback with setTimeout fallback for yielding to main thread
+        if (typeof requestIdleCallback !== 'undefined') {
+          requestIdleCallback(createChunk, { timeout: 50 });
+        } else {
+          setTimeout(createChunk, 0);
+        }
+      }
+    };
+
+    // Start creating chunks
+    createChunk();
 
     return () => {
-      clusterer.clearMarkers();
-      markers.forEach((m) => m.setMap(null));
+      cancelled = true;
+      if (clusterer) {
+        clusterer.clearMarkers();
+      }
+      allMarkers.forEach((m) => m.setMap(null));
       clustererRef.current = null;
       markersRef.current = [];
     };
-  }, [billboards, mapReady]);
+  }, [billboardIds, mapReady, billboards]);
 
   // Pan to billboard when "View on map" is used
   useEffect(() => {

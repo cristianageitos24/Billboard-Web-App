@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import HoustonMap from '@/components/HoustonMap';
 import BillboardDetailPanel from '@/components/BillboardDetailPanel';
 import BillboardList from '@/components/BillboardList';
 import FilterBar, { DEFAULT_FILTERS, type FilterState } from '@/components/FilterBar';
 import type { BillboardListItem } from '@/types/billboard';
 
-const MAP_LIMIT = 2500;
+const MAP_LIMIT = 1500;
 
 function buildBillboardsUrl(filters: FilterState): string {
   const params = new URLSearchParams();
@@ -32,30 +32,54 @@ function sortBillboards(billboards: BillboardListItem[], sort: FilterState['sort
 
 export default function Home() {
   const [billboards, setBillboards] = useState<BillboardListItem[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedBillboard, setSelectedBillboard] = useState<BillboardListItem | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [focusBillboard, setFocusBillboard] = useState<BillboardListItem | null>(null);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Debounced filter refetch to prevent redundant API calls
   useEffect(() => {
-    let cancelled = false;
+    // Clear any existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set loading immediately for responsive UI
     setLoading(true);
     setError(null);
-    fetch(buildBillboardsUrl(filters))
-      .then((res) => {
-        if (!res.ok) throw new Error(res.statusText);
-        return res.json();
-      })
-      .then((data: { billboards: BillboardListItem[] }) => {
-        if (!cancelled) setBillboards(data.billboards ?? []);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load billboards');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
+
+    let cancelled = false;
+
+    // Debounce the actual fetch
+    debounceTimeoutRef.current = setTimeout(() => {
+      fetch(buildBillboardsUrl(filters))
+        .then((res) => {
+          if (!res.ok) throw new Error(res.statusText);
+          return res.json();
+        })
+        .then((data: { billboards: BillboardListItem[]; totalCount?: number }) => {
+          if (!cancelled) {
+            setBillboards(data.billboards ?? []);
+            setTotalCount(data.totalCount ?? data.billboards?.length ?? 0);
+          }
+        })
+        .catch((e) => {
+          if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load billboards');
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
   }, [filters.boardType, filters.trafficTier, filters.priceTier]);
 
   const sortedBillboards = useMemo(
@@ -101,7 +125,7 @@ export default function Home() {
         )}
         {!loading && !error && (
           <p className="text-sm text-neutral-600">
-            {sortedBillboards.length} location{sortedBillboards.length !== 1 ? 's' : ''}
+            {totalCount} location{totalCount !== 1 ? 's' : ''}
           </p>
         )}
       </div>
@@ -115,7 +139,7 @@ export default function Home() {
         <div className="flex-1 min-w-0 min-h-[500px] p-4 flex flex-col">
           <div className="w-full flex-1 min-h-[500px] rounded-lg overflow-hidden bg-neutral-100">
             <HoustonMap
-              billboards={sortedBillboards}
+              billboards={billboards}
               onSelectBillboard={handleSelectBillboard}
               focusBillboard={focusBillboard}
             />

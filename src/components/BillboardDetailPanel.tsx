@@ -101,15 +101,27 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }
           </div>
           <div>
             <dt className="font-medium text-neutral-600">Board type</dt>
-            <dd className="text-neutral-900">{billboard.board_type ?? '—'}</dd>
+            <dd className="text-neutral-900">
+              {billboard.board_type 
+                ? `${billboard.board_type.charAt(0).toUpperCase() + billboard.board_type.slice(1)}${billboard.board_type === 'static' ? ' (Ex)' : ''}`
+                : '—'}
+            </dd>
           </div>
           <div>
             <dt className="font-medium text-neutral-600">Traffic tier</dt>
-            <dd className="text-neutral-900">{billboard.traffic_tier ?? '—'}</dd>
+            <dd className="text-neutral-900">
+              {billboard.traffic_tier 
+                ? `${billboard.traffic_tier.charAt(0).toUpperCase() + billboard.traffic_tier.slice(1)}${billboard.traffic_tier === 'medium' ? ' (Ex)' : ''}`
+                : '—'}
+            </dd>
           </div>
           <div>
             <dt className="font-medium text-neutral-600">Price tier</dt>
-            <dd className="text-neutral-900">{billboard.price_tier ?? '—'}</dd>
+            <dd className="text-neutral-900">
+              {billboard.price_tier 
+                ? `${billboard.price_tier}${billboard.price_tier === '$$' ? ' (Ex)' : ''}`
+                : '—'}
+            </dd>
           </div>
           {locate ? (
             <div>
