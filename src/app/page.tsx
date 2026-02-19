@@ -15,6 +15,7 @@ function buildBillboardsUrl(filters: FilterState): string {
   if (filters.boardType) params.set('board_type', filters.boardType);
   if (filters.trafficTier) params.set('traffic_tier', filters.trafficTier);
   if (filters.priceTier) params.set('price_tier', filters.priceTier);
+  if (filters.zipcodes.length > 0) params.set('zipcodes', filters.zipcodes.join(','));
   return `/api/billboards?${params.toString()}`;
 }
 
@@ -38,7 +39,24 @@ export default function Home() {
   const [selectedBillboard, setSelectedBillboard] = useState<BillboardListItem | null>(null);
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [focusBillboard, setFocusBillboard] = useState<BillboardListItem | null>(null);
+  const [availableZipcodes, setAvailableZipcodes] = useState<string[]>([]);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch available zipcodes on mount
+  useEffect(() => {
+    fetch('/api/zipcodes')
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then((data: { zipcodes: string[] }) => {
+        setAvailableZipcodes(data.zipcodes ?? []);
+      })
+      .catch((e) => {
+        console.error('Failed to load zipcodes:', e);
+        // Don't set error state here, just log - zipcode filter is optional
+      });
+  }, []);
 
   // Debounced filter refetch to prevent redundant API calls
   useEffect(() => {
@@ -80,7 +98,7 @@ export default function Home() {
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [filters.boardType, filters.trafficTier, filters.priceTier]);
+  }, [filters.boardType, filters.trafficTier, filters.priceTier, filters.zipcodes]);
 
   const sortedBillboards = useMemo(
     () => sortBillboards(billboards, filters.sort),
@@ -114,7 +132,7 @@ export default function Home() {
         </div>
       </header>
 
-      <FilterBar value={filters} onChange={setFilters} />
+      <FilterBar value={filters} onChange={setFilters} availableZipcodes={availableZipcodes} />
 
       <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-2">
         {loading && (

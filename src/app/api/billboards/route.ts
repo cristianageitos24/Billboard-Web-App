@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const boardType = searchParams.get("board_type");
   const trafficTier = searchParams.get("traffic_tier");
   const priceTier = searchParams.get("price_tier");
+  const zipcodesRaw = searchParams.get("zipcodes");
   const limitRaw = searchParams.get("limit");
 
   if (boardType != null && boardType !== "" && !BOARD_TYPES.includes(boardType as (typeof BOARD_TYPES)[number])) {
@@ -52,6 +53,20 @@ export async function GET(request: Request) {
   const limit = parseLimit(limitRaw);
   const houstonId = getHoustonCityId();
 
+  // Parse zipcodes
+  const zipcodes: string[] = [];
+  if (zipcodesRaw != null && zipcodesRaw !== "") {
+    zipcodesRaw
+      .split(",")
+      .map((z) => z.trim())
+      .filter((z) => z !== "" && /^\d{5}$/.test(z))
+      .forEach((z) => {
+        if (!zipcodes.includes(z)) {
+          zipcodes.push(z);
+        }
+      });
+  }
+
   const supabase = createServerSupabaseClient();
   
   // Build base query for count
@@ -69,6 +84,9 @@ export async function GET(request: Request) {
   if (priceTier != null && priceTier !== "") {
     countQuery = countQuery.eq("price_tier", priceTier);
   }
+  if (zipcodes.length > 0) {
+    countQuery = countQuery.in("zipcode", zipcodes);
+  }
 
   // Build query for data
   let query = supabase
@@ -85,6 +103,9 @@ export async function GET(request: Request) {
   }
   if (priceTier != null && priceTier !== "") {
     query = query.eq("price_tier", priceTier);
+  }
+  if (zipcodes.length > 0) {
+    query = query.in("zipcode", zipcodes);
   }
 
   // Execute both queries in parallel
