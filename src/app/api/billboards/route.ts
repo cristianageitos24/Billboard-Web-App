@@ -1,26 +1,16 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/admin";
+import type { BillboardListItem } from "@/types/billboard";
 
 const HOUSTON_ID_FALLBACK = "00000000-0000-0000-0000-000000000001";
 
 const BOARD_TYPES = ["static", "digital"] as const;
 const TRAFFIC_TIERS = ["low", "medium", "high", "prime"] as const;
 const PRICE_TIERS = ["$", "$$", "$$$", "$$$$"] as const;
-const MAX_LIMIT = 100;
+const MAX_LIMIT = 2500;
 const DEFAULT_LIMIT = 50;
 
-export type BillboardListItem = {
-  id: string;
-  name: string | null;
-  vendor: string | null;
-  address: string | null;
-  lat: number;
-  lng: number;
-  board_type: string;
-  traffic_tier: string;
-  price_tier: string;
-  image_url: string | null;
-};
+export type { BillboardListItem };
 
 function getHoustonCityId(): string {
   return process.env.HOUSTON_CITY_ID ?? HOUSTON_ID_FALLBACK;

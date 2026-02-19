@@ -1,4 +1,17 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Houston Billboard Finder
+
+Next.js app for viewing Houston billboard inventory on a map (Phase 2: GeoJSON import + Supabase).
+
+## Environment
+
+Copy `.env.local.example` to `.env.local` and set:
+
+- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+- `SUPABASE_SECRET_KEY` — Service role key (API and seed script)
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — For the map
+- `HOUSTON_CITY_ID` — Optional; defaults to `00000000-0000-0000-0000-000000000001`
+
+See [docs/GEOJSON_IMPORT.md](docs/GEOJSON_IMPORT.md) for GeoJSON seed command, prerequisites, and a **Verification (runbook)** checklist to confirm env, database, API, and frontend work end-to-end.
 
 ## Getting Started
 
