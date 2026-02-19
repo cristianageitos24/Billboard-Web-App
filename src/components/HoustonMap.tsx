@@ -179,6 +179,15 @@ export default function HoustonMap({ billboards, onSelectBillboard, focusBillboa
     };
   }, [billboardIds, mapReady, billboards]);
 
+  // Fit map to displayed billboards when the set changes (e.g. state/city filter)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !mapReady || billboards.length === 0) return;
+    const bounds = new google.maps.LatLngBounds();
+    billboards.forEach((b) => bounds.extend({ lat: b.lat, lng: b.lng }));
+    map.fitBounds(bounds, { top: 48, right: 48, bottom: 48, left: 48 });
+  }, [mapReady, billboardIds]);
+
   // Pan to billboard when "View on map" is used
   useEffect(() => {
     const map = mapInstanceRef.current;

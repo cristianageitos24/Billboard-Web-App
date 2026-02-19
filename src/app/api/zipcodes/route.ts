@@ -1,22 +1,38 @@
 import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/admin";
 
-const HOUSTON_ID_FALLBACK = "00000000-0000-0000-0000-000000000001";
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function getHoustonCityId(): string {
-  return process.env.HOUSTON_CITY_ID ?? HOUSTON_ID_FALLBACK;
+function parseUuid(value: string | null): string | null {
+  if (value == null || value === "") return null;
+  const t = value.trim();
+  return UUID_REGEX.test(t) ? t : null;
 }
 
-export async function GET() {
-  const houstonId = getHoustonCityId();
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const cityId = parseUuid(searchParams.get("city_id"));
+  const stateId = parseUuid(searchParams.get("state_id"));
+
   const supabase = createServerSupabaseClient();
 
-  // Query distinct zipcodes from billboards table
-  const { data, error } = await supabase
-    .from("billboards")
-    .select("zipcode")
-    .eq("city_id", houstonId)
-    .not("zipcode", "is", null);
+  let cityIds: string[] | null = null;
+  if (cityId) {
+    cityIds = [cityId];
+  } else if (stateId) {
+    const { data: citiesInState } = await supabase.from("cities").select("id").eq("state_id", stateId);
+    cityIds = (citiesInState ?? []).map((c: { id: string }) => c.id);
+    if (cityIds.length === 0) {
+      return NextResponse.json({ zipcodes: [] });
+    }
+  }
+
+  let query = supabase.from("billboards").select("zipcode").not("zipcode", "is", null);
+  if (cityIds != null && cityIds.length > 0) {
+    query = query.in("city_id", cityIds);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

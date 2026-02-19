@@ -14,6 +14,8 @@ export type FilterState = {
   trafficTier: TrafficTierFilter;
   zipcodes: string[];
   zipcodeInput: string;
+  stateId: string | null;
+  cityId: string | null;
 };
 
 export const DEFAULT_FILTERS: FilterState = {
@@ -23,12 +25,19 @@ export const DEFAULT_FILTERS: FilterState = {
   trafficTier: '',
   zipcodes: [],
   zipcodeInput: '',
+  stateId: null,
+  cityId: null,
 };
+
+export type StateOption = { id: string; name: string; state_code: string };
+export type CityOption = { id: string; name: string };
 
 type Props = {
   value: FilterState;
   onChange: (next: FilterState) => void;
   availableZipcodes?: string[];
+  states?: StateOption[];
+  cities?: CityOption[];
 };
 
 function activeCount(value: FilterState): number {
@@ -37,10 +46,12 @@ function activeCount(value: FilterState): number {
   if (value.boardType !== '') n++;
   if (value.trafficTier !== '') n++;
   if (value.zipcodes.length > 0) n++;
+  if (value.stateId != null) n++;
+  if (value.cityId != null) n++;
   return n;
 }
 
-export default function FilterBar({ value, onChange, availableZipcodes = [] }: Props) {
+export default function FilterBar({ value, onChange, availableZipcodes = [], states = [], cities = [] }: Props) {
   const active = activeCount(value);
   const handleClear = () => onChange(DEFAULT_FILTERS);
   const [isZipcodeDropdownOpen, setIsZipcodeDropdownOpen] = useState(false);
@@ -102,12 +113,23 @@ export default function FilterBar({ value, onChange, availableZipcodes = [] }: P
     });
   };
 
-  const handleFilterRemove = (filterType: 'priceTier' | 'boardType' | 'trafficTier') => {
+  const handleFilterRemove = (filterType: 'priceTier' | 'boardType' | 'trafficTier' | 'stateId' | 'cityId') => {
+    if (filterType === 'stateId') {
+      onChange({ ...value, stateId: null, cityId: null });
+      return;
+    }
+    if (filterType === 'cityId') {
+      onChange({ ...value, cityId: null });
+      return;
+    }
     onChange({
       ...value,
       [filterType]: '',
     });
   };
+
+  const selectedStateName = value.stateId ? states.find((s) => s.id === value.stateId)?.name : null;
+  const selectedCityName = value.cityId ? cities.find((c) => c.id === value.cityId)?.name : null;
 
   const getFilterLabel = (type: 'priceTier' | 'boardType' | 'trafficTier', value: string): string => {
     if (type === 'priceTier') return value;
@@ -130,6 +152,46 @@ export default function FilterBar({ value, onChange, availableZipcodes = [] }: P
             <option value="name_asc">Name A–Z</option>
             <option value="price_tier_asc">Price tier</option>
           </select>
+        </label>
+
+        <label className="flex items-center gap-1.5">
+          <span className="text-sm font-medium text-neutral-600">State</span>
+          <select
+            value={value.stateId ?? ''}
+            onChange={(e) => {
+              const nextStateId = e.target.value === '' ? null : e.target.value;
+              onChange({ ...value, stateId: nextStateId, cityId: null });
+            }}
+            className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            aria-label="Filter by state"
+          >
+            <option value="">All (Houston default)</option>
+            {states.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
+          {(value.stateId != null) && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-100 px-1.5 text-xs font-medium text-blue-700" aria-hidden>1</span>
+          )}
+        </label>
+
+        <label className="flex items-center gap-1.5">
+          <span className="text-sm font-medium text-neutral-600">City</span>
+          <select
+            value={value.cityId ?? ''}
+            onChange={(e) => onChange({ ...value, cityId: e.target.value === '' ? null : e.target.value })}
+            className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-[120px]"
+            aria-label="Filter by city"
+            disabled={!value.stateId && cities.length === 0}
+          >
+            <option value="">{value.stateId ? 'All in state' : 'Select state first'}</option>
+            {cities.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+          {(value.cityId != null) && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-blue-100 px-1.5 text-xs font-medium text-blue-700" aria-hidden>1</span>
+          )}
         </label>
 
         <label className="flex items-center gap-1.5">
@@ -258,6 +320,32 @@ export default function FilterBar({ value, onChange, availableZipcodes = [] }: P
 
       {active > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
+          {value.stateId != null && selectedStateName && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+              State: {selectedStateName}
+              <button
+                type="button"
+                onClick={() => handleFilterRemove('stateId')}
+                className="hover:text-blue-900 focus:outline-none"
+                aria-label={`Remove state filter ${selectedStateName}`}
+              >
+                ×
+              </button>
+            </span>
+          )}
+          {value.cityId != null && selectedCityName && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+              City: {selectedCityName}
+              <button
+                type="button"
+                onClick={() => handleFilterRemove('cityId')}
+                className="hover:text-blue-900 focus:outline-none"
+                aria-label={`Remove city filter ${selectedCityName}`}
+              >
+                ×
+              </button>
+            </span>
+          )}
           {value.priceTier !== '' && (
             <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
               Price: {getFilterLabel('priceTier', value.priceTier)}

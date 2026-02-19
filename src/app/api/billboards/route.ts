@@ -2,18 +2,19 @@ import { NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/admin";
 import type { BillboardListItem } from "@/types/billboard";
 
-const HOUSTON_ID_FALLBACK = "00000000-0000-0000-0000-000000000001";
-
 const BOARD_TYPES = ["static", "digital"] as const;
 const TRAFFIC_TIERS = ["low", "medium", "high", "prime"] as const;
 const PRICE_TIERS = ["$", "$$", "$$$", "$$$$"] as const;
 const MAX_LIMIT = 2500;
 const DEFAULT_LIMIT = 50;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type { BillboardListItem };
 
-function getHoustonCityId(): string {
-  return process.env.HOUSTON_CITY_ID ?? HOUSTON_ID_FALLBACK;
+function parseUuid(value: string | null): string | null {
+  if (value == null || value === "") return null;
+  const t = value.trim();
+  return UUID_REGEX.test(t) ? t : null;
 }
 
 function parseLimit(value: string | null): number {
@@ -30,6 +31,8 @@ export async function GET(request: Request) {
   const priceTier = searchParams.get("price_tier");
   const zipcodesRaw = searchParams.get("zipcodes");
   const limitRaw = searchParams.get("limit");
+  const cityId = parseUuid(searchParams.get("city_id"));
+  const stateId = parseUuid(searchParams.get("state_id"));
 
   if (boardType != null && boardType !== "" && !BOARD_TYPES.includes(boardType as (typeof BOARD_TYPES)[number])) {
     return NextResponse.json(
@@ -51,7 +54,6 @@ export async function GET(request: Request) {
   }
 
   const limit = parseLimit(limitRaw);
-  const houstonId = getHoustonCityId();
 
   // Parse zipcodes
   const zipcodes: string[] = [];
@@ -68,47 +70,46 @@ export async function GET(request: Request) {
   }
 
   const supabase = createServerSupabaseClient();
-  
-  // Build base query for count
-  let countQuery = supabase
-    .from("billboards")
-    .select("*", { count: "exact", head: true })
-    .eq("city_id", houstonId);
 
-  if (boardType != null && boardType !== "") {
-    countQuery = countQuery.eq("board_type", boardType);
-  }
-  if (trafficTier != null && trafficTier !== "") {
-    countQuery = countQuery.eq("traffic_tier", trafficTier);
-  }
-  if (priceTier != null && priceTier !== "") {
-    countQuery = countQuery.eq("price_tier", priceTier);
-  }
-  if (zipcodes.length > 0) {
-    countQuery = countQuery.in("zipcode", zipcodes);
+  let cityIds: string[] | null = null;
+  if (cityId) {
+    cityIds = [cityId];
+  } else if (stateId) {
+    const { data: citiesInState } = await supabase.from("cities").select("id").eq("state_id", stateId);
+    cityIds = (citiesInState ?? []).map((c: { id: string }) => c.id);
+    if (cityIds.length === 0) {
+      return NextResponse.json({ billboards: [], totalCount: 0 });
+    }
   }
 
-  // Build query for data
+  let countQuery = supabase.from("billboards").select("*", { count: "exact", head: true });
   let query = supabase
     .from("billboards")
     .select("id, name, vendor, address, zipcode, source_properties, latitude, longitude, board_type, traffic_tier, price_tier, image_url")
-    .eq("city_id", houstonId)
     .limit(limit);
 
+  if (cityIds != null && cityIds.length > 0) {
+    countQuery = countQuery.in("city_id", cityIds);
+    query = query.in("city_id", cityIds);
+  }
+
   if (boardType != null && boardType !== "") {
+    countQuery = countQuery.eq("board_type", boardType);
     query = query.eq("board_type", boardType);
   }
   if (trafficTier != null && trafficTier !== "") {
+    countQuery = countQuery.eq("traffic_tier", trafficTier);
     query = query.eq("traffic_tier", trafficTier);
   }
   if (priceTier != null && priceTier !== "") {
+    countQuery = countQuery.eq("price_tier", priceTier);
     query = query.eq("price_tier", priceTier);
   }
   if (zipcodes.length > 0) {
+    countQuery = countQuery.in("zipcode", zipcodes);
     query = query.in("zipcode", zipcodes);
   }
 
-  // Execute both queries in parallel
   const [{ data, error }, { count, error: countError }] = await Promise.all([
     query,
     countQuery,

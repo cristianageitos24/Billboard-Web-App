@@ -24,6 +24,17 @@ function numProp(p: Record<string, unknown> | null, key: string): number | null 
   return Number.isNaN(n) ? null : n;
 }
 
+function objProp<T = Record<string, unknown>>(p: Record<string, unknown> | null, key: string): T | null {
+  if (!p || !(key in p)) return null;
+  const v = p[key];
+  if (v != null && typeof v === 'object' && !Array.isArray(v)) return v as T;
+  return null;
+}
+
+function isBlipSource(sp: Record<string, unknown> | null): boolean {
+  return !!(sp && ('daily_impressions' in sp || 'display_name' in sp));
+}
+
 export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }: Props) {
   const [permitDetailsOpen, setPermitDetailsOpen] = useState(false);
 
@@ -39,6 +50,7 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }
   }
 
   const sp = billboard.source_properties ?? null;
+  const isBlip = isBlipSource(sp);
   const locate = strProp(sp, 'LOCATE');
   const w1 = numProp(sp, 'W1');
   const h1 = numProp(sp, 'H1');
@@ -48,6 +60,28 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }
   const comments = strProp(sp, 'COMMENTS');
   const hasDimensions = (w1 != null && w1 > 0) || (h1 != null && h1 > 0) || (hgt1 != null && hgt1 > 0);
   const hasPermitDetails = comments.length > 0 || (sp && Object.keys(sp).length > 0);
+
+  const blipDisplayName = isBlip ? strProp(sp, 'display_name') : '';
+  const blipLocation = isBlip ? strProp(sp, 'location') : '';
+  const blipDescription = isBlip ? strProp(sp, 'description') : '';
+  const blipCity = isBlip ? strProp(sp, 'city') : '';
+  const blipProvince = isBlip ? strProp(sp, 'province') : '';
+  const blipDailyImp = isBlip ? numProp(sp, 'daily_impressions') : null;
+  const blipFlipDuration = isBlip ? numProp(sp, 'flip_duration') : null;
+  const blipAvailableFlips = isBlip ? numProp(sp, 'available_flips') : null;
+  const blipBooked = isBlip && sp && typeof sp.booked === 'boolean' ? sp.booked : null;
+  const blipBoardWidth = isBlip ? numProp(sp, 'board_width') : null;
+  const blipBoardHeight = isBlip ? numProp(sp, 'board_height') : null;
+  const blipFacing = isBlip ? strProp(sp, 'facing') : '';
+  const blipRead = isBlip ? strProp(sp, 'read') : '';
+  const blipMaxMinPrice = isBlip ? numProp(sp, 'max_minimum_price') : null;
+  const blipFeeRate = isBlip ? numProp(sp, 'fee_rate') : null;
+  const blipCpmRange = isBlip ? objProp<{ low_cpm?: number; high_cpm?: number }>(sp, 'cpm_range') : null;
+  const blipThirtyDay = isBlip ? objProp<{ price_per_flip?: number; impressions_per_flip?: number; avg_flips_per_day?: number }>(sp, 'thirty_day_averages') : null;
+  const blipPhotos = isBlip && sp && Array.isArray(sp.photos) && sp.photos.length > 0 ? (sp.photos as Array<{ thumbnail_url?: string; url?: string }>) : null;
+  const blipVenueType = isBlip ? objProp<{ string_value?: string; definition?: string }>(sp, 'venue_type') : null;
+  const blipCategories = isBlip && sp && Array.isArray(sp.categories) ? (sp.categories as string[]) : null;
+  const blipTimezone = isBlip ? strProp(sp, 'timezone') : '';
 
   return (
     <aside
@@ -123,13 +157,25 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }
                 : '—'}
             </dd>
           </div>
-          {locate ? (
+          {isBlip && blipDisplayName ? (
+            <div>
+              <dt className="font-medium text-neutral-600">Display name</dt>
+              <dd className="text-neutral-900">{blipDisplayName}</dd>
+            </div>
+          ) : null}
+          {isBlip && blipLocation ? (
+            <div>
+              <dt className="font-medium text-neutral-600">Location</dt>
+              <dd className="text-neutral-900">{blipLocation}</dd>
+            </div>
+          ) : null}
+          {!isBlip && locate ? (
             <div>
               <dt className="font-medium text-neutral-600">Location</dt>
               <dd className="text-neutral-900">{locate}</dd>
             </div>
           ) : null}
-          {hasDimensions ? (
+          {hasDimensions && !isBlip ? (
             <div>
               <dt className="font-medium text-neutral-600">Dimensions</dt>
               <dd className="text-neutral-900">
@@ -145,13 +191,13 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }
               </dd>
             </div>
           ) : null}
-          {faces != null && faces > 0 ? (
+          {!isBlip && faces != null && faces > 0 ? (
             <div>
               <dt className="font-medium text-neutral-600">Faces</dt>
               <dd className="text-neutral-900">{faces}</dd>
             </div>
           ) : null}
-          {projectNo ? (
+          {!isBlip && projectNo ? (
             <div>
               <dt className="font-medium text-neutral-600">Project #</dt>
               <dd className="text-neutral-900">{projectNo}</dd>
@@ -165,6 +211,124 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }
           </div>
         </dl>
       </section>
+
+      {isBlip ? (
+        <section className="mb-4 pt-4 border-t border-neutral-200">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-neutral-500 mb-2">Digital board details</h3>
+          <dl className="space-y-2 text-sm">
+            {(blipCity || blipProvince) ? (
+              <div>
+                <dt className="font-medium text-neutral-600">City / State</dt>
+                <dd className="text-neutral-900">{[blipCity, blipProvince].filter(Boolean).join(', ') || '—'}</dd>
+              </div>
+            ) : null}
+            {blipDescription ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Description</dt>
+                <dd className="text-neutral-900 whitespace-pre-wrap">{blipDescription}</dd>
+              </div>
+            ) : null}
+            {blipFlipDuration != null ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Flip duration (swap rate)</dt>
+                <dd className="text-neutral-900">{blipFlipDuration} sec</dd>
+              </div>
+            ) : null}
+            {blipDailyImp != null ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Daily impressions</dt>
+                <dd className="text-neutral-900">{blipDailyImp.toLocaleString()}</dd>
+              </div>
+            ) : null}
+            {blipAvailableFlips != null ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Available flips</dt>
+                <dd className="text-neutral-900">{blipAvailableFlips.toLocaleString()}</dd>
+              </div>
+            ) : null}
+            {blipBooked !== null ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Booked</dt>
+                <dd className="text-neutral-900">{blipBooked ? 'Yes' : 'No'}</dd>
+              </div>
+            ) : null}
+            {(blipBoardWidth != null || blipBoardHeight != null) ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Dimensions</dt>
+                <dd className="text-neutral-900">
+                  {[blipBoardWidth != null ? `${blipBoardWidth} ft wide` : null, blipBoardHeight != null ? `${blipBoardHeight} ft tall` : null].filter(Boolean).join(' × ') || '—'}
+                </dd>
+              </div>
+            ) : null}
+            {(blipFacing || blipRead) ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Facing / Read</dt>
+                <dd className="text-neutral-900">{[blipFacing, blipRead].filter(Boolean).join(' / ') || '—'}</dd>
+              </div>
+            ) : null}
+            {blipMaxMinPrice != null ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Max minimum price</dt>
+                <dd className="text-neutral-900">${blipMaxMinPrice.toFixed(2)}</dd>
+              </div>
+            ) : null}
+            {blipFeeRate != null ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Fee rate</dt>
+                <dd className="text-neutral-900">{(blipFeeRate * 100).toFixed(0)}%</dd>
+              </div>
+            ) : null}
+            {blipCpmRange && (blipCpmRange.low_cpm != null || blipCpmRange.high_cpm != null) ? (
+              <div>
+                <dt className="font-medium text-neutral-600">CPM range</dt>
+                <dd className="text-neutral-900">
+                  {blipCpmRange.low_cpm != null ? `$${blipCpmRange.low_cpm}` : '—'} – {blipCpmRange.high_cpm != null ? `$${blipCpmRange.high_cpm}` : '—'}
+                </dd>
+              </div>
+            ) : null}
+            {blipThirtyDay && (blipThirtyDay.price_per_flip != null || blipThirtyDay.impressions_per_flip != null || blipThirtyDay.avg_flips_per_day != null) ? (
+              <div>
+                <dt className="font-medium text-neutral-600">30-day averages</dt>
+                <dd className="text-neutral-900">
+                  {[
+                    blipThirtyDay.price_per_flip != null ? `Price/flip: $${blipThirtyDay.price_per_flip.toFixed(2)}` : null,
+                    blipThirtyDay.impressions_per_flip != null ? `Impressions/flip: ${blipThirtyDay.impressions_per_flip.toFixed(1)}` : null,
+                    blipThirtyDay.avg_flips_per_day != null ? `Avg flips/day: ${blipThirtyDay.avg_flips_per_day.toFixed(1)}` : null,
+                  ].filter(Boolean).join(' · ')}
+                </dd>
+              </div>
+            ) : null}
+            {blipTimezone ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Timezone</dt>
+                <dd className="text-neutral-900">{blipTimezone}</dd>
+              </div>
+            ) : null}
+            {blipVenueType?.string_value || blipVenueType?.definition ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Venue type</dt>
+                <dd className="text-neutral-900">{blipVenueType.definition ?? blipVenueType.string_value ?? '—'}</dd>
+              </div>
+            ) : null}
+            {blipCategories && blipCategories.length > 0 ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Categories</dt>
+                <dd className="text-neutral-900">{blipCategories.join(', ')}</dd>
+              </div>
+            ) : null}
+            {blipPhotos && blipPhotos[0] ? (
+              <div>
+                <dt className="font-medium text-neutral-600">Photo</dt>
+                <dd>
+                  <a href={blipPhotos[0].url || blipPhotos[0].thumbnail_url || '#'} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    <img src={blipPhotos[0].thumbnail_url || blipPhotos[0].url || ''} alt="Board" className="mt-1 rounded max-w-full h-auto max-h-32 object-contain" />
+                  </a>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </section>
+      ) : null}
       {hasPermitDetails ? (
         <div className="mt-4 pt-4 border-t border-neutral-200">
           <button

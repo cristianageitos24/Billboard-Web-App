@@ -4,19 +4,31 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import HoustonMap from '@/components/HoustonMap';
 import BillboardDetailPanel from '@/components/BillboardDetailPanel';
 import BillboardList from '@/components/BillboardList';
-import FilterBar, { DEFAULT_FILTERS, type FilterState } from '@/components/FilterBar';
+import FilterBar, { DEFAULT_FILTERS, type FilterState, type StateOption, type CityOption } from '@/components/FilterBar';
 import type { BillboardListItem } from '@/types/billboard';
 
 const MAP_LIMIT = 1500;
+const HOUSTON_CITY_ID = '00000000-0000-0000-0000-000000000001';
 
 function buildBillboardsUrl(filters: FilterState): string {
   const params = new URLSearchParams();
   params.set('limit', String(MAP_LIMIT));
+  if (filters.cityId) params.set('city_id', filters.cityId);
+  else if (filters.stateId) params.set('state_id', filters.stateId);
+  else params.set('city_id', HOUSTON_CITY_ID);
   if (filters.boardType) params.set('board_type', filters.boardType);
   if (filters.trafficTier) params.set('traffic_tier', filters.trafficTier);
   if (filters.priceTier) params.set('price_tier', filters.priceTier);
   if (filters.zipcodes.length > 0) params.set('zipcodes', filters.zipcodes.join(','));
   return `/api/billboards?${params.toString()}`;
+}
+
+function buildZipcodesUrl(filters: FilterState): string {
+  const params = new URLSearchParams();
+  if (filters.cityId) params.set('city_id', filters.cityId);
+  else if (filters.stateId) params.set('state_id', filters.stateId);
+  else params.set('city_id', HOUSTON_CITY_ID);
+  return `/api/zipcodes?${params.toString()}`;
 }
 
 function sortBillboards(billboards: BillboardListItem[], sort: FilterState['sort']): BillboardListItem[] {
@@ -40,11 +52,42 @@ export default function Home() {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [focusBillboard, setFocusBillboard] = useState<BillboardListItem | null>(null);
   const [availableZipcodes, setAvailableZipcodes] = useState<string[]>([]);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [cities, setCities] = useState<CityOption[]>([]);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch available zipcodes on mount
+  // Fetch states on mount
   useEffect(() => {
-    fetch('/api/zipcodes')
+    fetch('/api/states')
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then((data: { states: StateOption[] }) => setStates(data.states ?? []))
+      .catch((e) => console.error('Failed to load states:', e));
+  }, []);
+
+  // Fetch cities when state is selected
+  useEffect(() => {
+    if (!filters.stateId) {
+      setCities([]);
+      return;
+    }
+    fetch(`/api/cities?state_id=${encodeURIComponent(filters.stateId)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then((data: { cities: CityOption[] }) => setCities(data.cities ?? []))
+      .catch((e) => {
+        console.error('Failed to load cities:', e);
+        setCities([]);
+      });
+  }, [filters.stateId]);
+
+  // Fetch available zipcodes when location filter changes
+  useEffect(() => {
+    fetch(buildZipcodesUrl(filters))
       .then((res) => {
         if (!res.ok) throw new Error(res.statusText);
         return res.json();
@@ -54,9 +97,8 @@ export default function Home() {
       })
       .catch((e) => {
         console.error('Failed to load zipcodes:', e);
-        // Don't set error state here, just log - zipcode filter is optional
       });
-  }, []);
+  }, [filters.cityId, filters.stateId]);
 
   // Debounced filter refetch to prevent redundant API calls
   useEffect(() => {
@@ -98,7 +140,7 @@ export default function Home() {
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [filters.boardType, filters.trafficTier, filters.priceTier, filters.zipcodes]);
+  }, [filters.boardType, filters.trafficTier, filters.priceTier, filters.zipcodes, filters.cityId, filters.stateId]);
 
   const sortedBillboards = useMemo(
     () => sortBillboards(billboards, filters.sort),
@@ -132,7 +174,7 @@ export default function Home() {
         </div>
       </header>
 
-      <FilterBar value={filters} onChange={setFilters} availableZipcodes={availableZipcodes} />
+      <FilterBar value={filters} onChange={setFilters} availableZipcodes={availableZipcodes} states={states} cities={cities} />
 
       <div className="shrink-0 border-b border-neutral-200 bg-white px-4 py-2">
         {loading && (
