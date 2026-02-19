@@ -46,6 +46,8 @@ function rowFromFeature(feature, cityId) {
     name: name || null,
     vendor: trim(p.SIGN_CO) || null,
     address: address || null,
+    zipcode: trim(p.ZIP) || null,
+    source_properties: feature.properties || null,
     latitude: lat,
     longitude: lng,
     board_type: "static",

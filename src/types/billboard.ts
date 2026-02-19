@@ -3,6 +3,8 @@ export type BillboardListItem = {
   name: string | null;
   vendor: string | null;
   address: string | null;
+  zipcode: string | null;
+  source_properties: Record<string, unknown> | null;
   lat: number;
   lng: number;
   board_type: string;

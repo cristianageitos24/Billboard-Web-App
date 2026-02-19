@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   const supabase = createServerSupabaseClient();
   let query = supabase
     .from("billboards")
-    .select("id, name, vendor, address, latitude, longitude, board_type, traffic_tier, price_tier, image_url")
+    .select("id, name, vendor, address, zipcode, source_properties, latitude, longitude, board_type, traffic_tier, price_tier, image_url")
     .eq("city_id", houstonId)
     .limit(limit);
 
@@ -80,6 +80,8 @@ export async function GET(request: Request) {
     name: (row.name as string | null) ?? null,
     vendor: (row.vendor as string | null) ?? null,
     address: (row.address as string | null) ?? null,
+    zipcode: (row.zipcode as string | null) ?? null,
+    source_properties: (row.source_properties as Record<string, unknown> | null) ?? null,
     lat: row.latitude as number,
     lng: row.longitude as number,
     board_type: row.board_type as string,

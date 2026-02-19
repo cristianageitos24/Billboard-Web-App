@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { BillboardListItem } from '@/types/billboard';
 
 type Props = {
@@ -7,7 +8,24 @@ type Props = {
   onClose: () => void;
 };
 
+function strProp(p: Record<string, unknown> | null, key: string): string {
+  if (!p || !(key in p)) return '';
+  const v = p[key];
+  if (v == null) return '';
+  return String(v).trim();
+}
+
+function numProp(p: Record<string, unknown> | null, key: string): number | null {
+  if (!p || !(key in p)) return null;
+  const v = p[key];
+  if (v == null) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
+}
+
 export default function BillboardDetailPanel({ billboard, onClose }: Props) {
+  const [permitDetailsOpen, setPermitDetailsOpen] = useState(false);
+
   if (!billboard) {
     return (
       <aside
@@ -18,6 +36,17 @@ export default function BillboardDetailPanel({ billboard, onClose }: Props) {
       </aside>
     );
   }
+
+  const sp = billboard.source_properties ?? null;
+  const locate = strProp(sp, 'LOCATE');
+  const w1 = numProp(sp, 'W1');
+  const h1 = numProp(sp, 'H1');
+  const hgt1 = numProp(sp, 'HGT1');
+  const faces = numProp(sp, 'FACES');
+  const projectNo = strProp(sp, 'PROJECTNO');
+  const comments = strProp(sp, 'COMMENTS');
+  const hasDimensions = (w1 != null && w1 > 0) || (h1 != null && h1 > 0) || (hgt1 != null && hgt1 > 0);
+  const hasPermitDetails = comments.length > 0 || (sp && Object.keys(sp).length > 0);
 
   return (
     <aside
@@ -46,8 +75,44 @@ export default function BillboardDetailPanel({ billboard, onClose }: Props) {
         </div>
         <div>
           <dt className="font-medium text-neutral-600">Address</dt>
-          <dd className="text-neutral-900">{billboard.address ?? '—'}</dd>
+          <dd className="text-neutral-900">
+            {[billboard.address, billboard.zipcode].filter(Boolean).join(', ') || '—'}
+          </dd>
         </div>
+        {locate ? (
+          <div>
+            <dt className="font-medium text-neutral-600">Location</dt>
+            <dd className="text-neutral-900">{locate}</dd>
+          </div>
+        ) : null}
+        {hasDimensions ? (
+          <div>
+            <dt className="font-medium text-neutral-600">Dimensions</dt>
+            <dd className="text-neutral-900">
+              {w1 != null && w1 > 0 && h1 != null && h1 > 0
+                ? `${w1} ft × ${h1} ft`
+                : w1 != null && w1 > 0
+                  ? `${w1} ft wide`
+                  : h1 != null && h1 > 0
+                    ? `${h1} ft tall`
+                    : ''}
+              {hgt1 != null && hgt1 > 0 &&
+                (hasDimensions && (w1 != null || h1 != null) ? ` · Pole ${hgt1} ft` : `Pole height ${hgt1} ft`)}
+            </dd>
+          </div>
+        ) : null}
+        {faces != null && faces > 0 ? (
+          <div>
+            <dt className="font-medium text-neutral-600">Faces</dt>
+            <dd className="text-neutral-900">{faces}</dd>
+          </div>
+        ) : null}
+        {projectNo ? (
+          <div>
+            <dt className="font-medium text-neutral-600">Project #</dt>
+            <dd className="text-neutral-900">{projectNo}</dd>
+          </div>
+        ) : null}
         <div>
           <dt className="font-medium text-neutral-600">Coordinates</dt>
           <dd className="text-neutral-700 font-mono text-xs">
@@ -55,6 +120,33 @@ export default function BillboardDetailPanel({ billboard, onClose }: Props) {
           </dd>
         </div>
       </dl>
+      {hasPermitDetails ? (
+        <div className="mt-4 pt-4 border-t border-neutral-200">
+          <button
+            type="button"
+            onClick={() => setPermitDetailsOpen((o) => !o)}
+            className="text-sm font-medium text-neutral-600 hover:text-neutral-900 flex items-center gap-1"
+            aria-expanded={permitDetailsOpen}
+          >
+            {permitDetailsOpen ? '−' : '+'} Permit details
+          </button>
+          {permitDetailsOpen ? (
+            <div className="mt-2 text-sm text-neutral-700 space-y-2">
+              {comments ? (
+                <div>
+                  <span className="font-medium text-neutral-600">Comments: </span>
+                  <span className="whitespace-pre-wrap">{comments}</span>
+                </div>
+              ) : null}
+              {sp && Object.keys(sp).length > 0 && (
+                <pre className="text-xs bg-neutral-100 p-2 rounded overflow-auto max-h-40">
+                  {JSON.stringify(sp, null, 2)}
+                </pre>
+              )}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <div className="mt-6 pt-4 border-t border-neutral-200">
         <button
           type="button"
