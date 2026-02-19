@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { MarkerClusterer } from '@googlemaps/markerclusterer';
+import { MarkerClusterer, SuperClusterAlgorithm } from '@googlemaps/markerclusterer';
 import type { BillboardListItem } from '@/types/billboard';
 
 const HOUSTON_CENTER = { lat: 29.7604, lng: -95.3698 };
@@ -134,7 +134,19 @@ export default function HoustonMap({ billboards, onSelectBillboard, focusBillboa
 
       // Initialize or update clusterer with all markers so far
       if (!clusterer) {
-        clusterer = new MarkerClusterer({ map, markers: allMarkers });
+        // Configure clustering algorithm with optimized settings for predictable behavior
+        const algorithm = new SuperClusterAlgorithm({
+          radius: 60, // Cluster radius in pixels (larger = more aggressive clustering)
+          maxZoom: 14, // Stop clustering at zoom 14, show individual markers when zoomed in
+          minZoom: 0, // Cluster at all zoom levels
+        });
+        
+        // Use default renderer for original visual appearance
+        clusterer = new MarkerClusterer({
+          map,
+          markers: allMarkers,
+          algorithm,
+        });
         clustererRef.current = clusterer;
       } else {
         clusterer.addMarkers(chunkMarkers);
