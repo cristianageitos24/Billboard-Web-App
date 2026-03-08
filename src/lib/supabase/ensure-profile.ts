@@ -4,7 +4,10 @@ const DEFAULT_ORG_NAME = "My Organization";
 
 /**
  * Ensures the user has a profile and organization. Idempotent: if profile exists, no-op.
- * Uses admin client (service role) to bypass RLS for the initial bootstrap.
+ *
+ * Uses the service-role client because the user has no profile yet, so
+ * current_org_id() would be null and RLS would block org/profile creation.
+ * Call only from auth callback or signup action — never from tenant-facing APIs.
  */
 export async function ensureProfile(
   userId: string,

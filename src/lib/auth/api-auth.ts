@@ -6,7 +6,8 @@ import type { User } from "@supabase/supabase-js";
 
 /**
  * Builds a server Supabase client from the request (cookies) and returns the current user.
- * Use in protected API route handlers: if null, return 401.
+ * Use in protected, organization-scoped API route handlers: if null, return 401.
+ * RLS then restricts data to the user's organization (current_org_id()).
  *
  * Example:
  *   const user = await getUserFromRequest(request);

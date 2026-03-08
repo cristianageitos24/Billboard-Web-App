@@ -1,5 +1,6 @@
+/** Public data: distinct zipcodes from billboards/cities; anon client, RLS applies. */
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/admin";
+import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
   const cityId = parseUuid(searchParams.get("city_id"));
   const stateId = parseUuid(searchParams.get("state_id"));
 
-  const supabase = createServerSupabaseClient();
+  const supabase = createPublicSupabaseClient();
 
   let cityIds: string[] | null = null;
   if (cityId) {

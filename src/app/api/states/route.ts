@@ -1,8 +1,9 @@
+/** Public reference data: no auth; anon client, RLS allows anon SELECT on states. */
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/admin";
+import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
 export async function GET() {
-  const supabase = createServerSupabaseClient();
+  const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("states")
     .select("id, name, state_code")

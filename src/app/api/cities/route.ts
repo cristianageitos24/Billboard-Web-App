@@ -1,5 +1,6 @@
+/** Public reference data: no auth; anon client, RLS allows anon SELECT on cities. */
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/admin";
+import { createPublicSupabaseClient } from "@/lib/supabase/public";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "state_id is required" }, { status: 400 });
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = createPublicSupabaseClient();
   const { data, error } = await supabase
     .from("cities")
     .select("id, name")

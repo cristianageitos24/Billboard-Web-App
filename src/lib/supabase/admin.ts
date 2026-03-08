@@ -1,8 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
 /**
- * Server-only Supabase client using the service role key.
- * Bypasses RLS. Use only in API routes or server code — never in client components.
+ * Server-only Supabase client using the service role key. Bypasses RLS.
+ *
+ * SECURITY: Use only for bootstrap or trusted server operations (e.g. ensureProfile).
+ * Do not use in tenant-facing API routes — org-scoped data must go through the
+ * cookie-based client so RLS enforces organization isolation.
  */
 export function createServerSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

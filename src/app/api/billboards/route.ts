@@ -1,5 +1,6 @@
+/** Public inventory: no auth; uses anon client so RLS (anon SELECT on billboards) applies. */
 import { NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/admin";
+import { createPublicSupabaseClient } from "@/lib/supabase/public";
 import type { BillboardListItem } from "@/types/billboard";
 
 const BOARD_TYPES = ["static", "digital"] as const;
@@ -69,7 +70,7 @@ export async function GET(request: Request) {
       });
   }
 
-  const supabase = createServerSupabaseClient();
+  const supabase = createPublicSupabaseClient();
 
   let cityIds: string[] | null = null;
   if (cityId) {
