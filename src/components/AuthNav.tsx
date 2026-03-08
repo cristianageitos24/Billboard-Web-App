@@ -18,6 +18,9 @@ export default function AuthNav() {
   if (user) {
     return (
       <nav className="flex items-center justify-end gap-3 h-10 px-4 text-sm">
+        <Link href="/dashboard" className="text-foreground/80 hover:text-foreground underline">
+          Dashboard
+        </Link>
         <Link href="/my-boards" className="text-foreground/80 hover:text-foreground underline">
           My Boards
         </Link>
