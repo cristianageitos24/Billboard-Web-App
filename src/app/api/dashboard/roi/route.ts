@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getUserFromRequest } from "@/lib/auth/api-auth";
+import { getManualMetricsForMonth } from "@/lib/attribution/get-metrics";
 import type {
   DashboardROIResponse,
   DashboardROISummary,
@@ -25,19 +26,13 @@ function toFirstOfMonth(value: string): string | null {
  * GET /api/dashboard/roi?month=YYYY-MM
  *
  * Returns ROI summary and per-board breakdown for the authenticated user's
- * organization. Uses organization context via RLS (profiles.organization_id).
+ * organization. Metrics are loaded via the attribution layer (currently
+ * manual org_monthly_metrics only; CRM/referral data would be merged there).
  *
  * Calculations:
  * - Total spend: sum(monthly_cost) over all org_billboards where is_active = true.
- *   We use current is_active; no historical "active at date."
- * - Total leads / signed cases / revenue: sum of org_monthly_metrics for the
- *   selected month (one row per board per month).
- * - Cost per lead = totalSpend / totalLeads (null if no leads).
- * - Cost per signed case = totalSpend / totalSignedCases (null if no cases).
- * - ROI multiple = totalRevenue / totalSpend (null if no spend).
- *
- * Board rows: only boards that have at least one metric row for the month.
- * Per-board spend for the month = that board's monthly_cost if active, else 0.
+ * - Total leads / signed cases / revenue: from getManualMetricsForMonth (later merged with integrations).
+ * - Cost per lead, cost per signed case, ROI multiple: derived from above.
  */
 export async function GET(request: NextRequest) {
   const user = await getUserFromRequest(request);
@@ -93,39 +88,18 @@ export async function GET(request: NextRequest) {
   };
   const boards = (boardsData ?? []) as BoardRow[];
 
-  // Fetch all metrics for the selected month (org-scoped by RLS).
-  const { data: metricsData, error: metricsError } = await supabase
-    .from("org_monthly_metrics")
-    .select("org_billboard_id, leads, signed_cases, revenue")
-    .eq("month", monthDate);
-
-  if (metricsError) {
-    return NextResponse.json(
-      { error: metricsError.message },
-      { status: 500 }
-    );
-  }
-
-  const metricsRows = metricsData ?? [];
-
-  // Build a map: org_billboard_id -> { leads, signed_cases, revenue } (one row per board per month, so we can sum if needed; currently one row per board)
-  const metricsByBoard = new Map<
+  let metricsByBoard: Map<
     string,
     { leads: number; signedCases: number; revenue: number }
-  >();
-  for (const row of metricsRows) {
-    const id = row.org_billboard_id as string;
-    const existing = metricsByBoard.get(id);
-    const leads = Number(row.leads) || 0;
-    const signedCases = Number(row.signed_cases) || 0;
-    const revenue = Number(row.revenue) || 0;
-    if (existing) {
-      existing.leads += leads;
-      existing.signedCases += signedCases;
-      existing.revenue += revenue;
-    } else {
-      metricsByBoard.set(id, { leads, signedCases, revenue });
-    }
+  >;
+  try {
+    const payload = await getManualMetricsForMonth(supabase, monthDate);
+    metricsByBoard = payload.byBoard;
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : "Failed to load metrics" },
+      { status: 500 }
+    );
   }
 
   // Total spend: sum(monthly_cost) for active boards only (for this one month).
