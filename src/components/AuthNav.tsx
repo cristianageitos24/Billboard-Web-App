@@ -18,6 +18,9 @@ export default function AuthNav() {
   if (user) {
     return (
       <nav className="flex items-center justify-end gap-3 h-10 px-4 text-sm">
+        <Link href="/my-boards" className="text-foreground/80 hover:text-foreground underline">
+          My Boards
+        </Link>
         <span className="text-foreground/80 truncate max-w-[180px]" title={user.email ?? undefined}>
           {user.email}
         </span>

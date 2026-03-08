@@ -13,6 +13,7 @@ export const PUBLIC_PATHS = [
 
 /** Path prefixes that require auth when route protection is enabled (e.g. /dashboard, /account). */
 export const PROTECTED_PATH_PREFIXES = [
+  "/my-boards",
   // "/dashboard",
   // "/account",
 ] as const;
@@ -37,7 +38,7 @@ export function isPublicPath(pathname: string): boolean {
 }
 
 export function isProtectedPath(pathname: string): boolean {
-  if (PROTECTED_PATH_PREFIXES.length === 0) {
+  if (PROTECTED_PATH_PREFIXES.length < 1) {
     return false;
   }
   return PROTECTED_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));

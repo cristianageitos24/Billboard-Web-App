@@ -14,6 +14,15 @@ Copy `.env.local.example` to `.env.local` and set:
 
 See [docs/GEOJSON_IMPORT.md](docs/GEOJSON_IMPORT.md) for GeoJSON seed command, prerequisites, and a **Verification (runbook)** checklist to confirm env, database, API, and frontend work end-to-end.
 
+## Database migrations (Supabase)
+
+This repo is linked to the **Billboard Web App** Supabase project. To avoid affecting other projects (e.g. AI Recipe App):
+
+- **Run migrations only via the Supabase CLI from this repo:** `npx supabase db push` (or `supabase migration repair` if fixing history). The CLI uses the project linked here (`supabase link`), so it only touches Billboard Web App.
+- **Do not run DDL or `apply_migration` via Supabase MCP** unless you have confirmed the MCP is connected to this project. Prefer the CLI for schema changes.
+
+Check linked project: `npx supabase projects list` (the ● shows which project this repo uses).
+
 ## Getting Started
 
 First, run the development server:

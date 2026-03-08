@@ -5,6 +5,7 @@ import HoustonMap from '@/components/HoustonMap';
 import BillboardDetailPanel from '@/components/BillboardDetailPanel';
 import BillboardList from '@/components/BillboardList';
 import FilterBar, { DEFAULT_FILTERS, type FilterState, type StateOption, type CityOption } from '@/components/FilterBar';
+import { useUser } from '@/hooks/useUser';
 import type { BillboardListItem } from '@/types/billboard';
 
 const MAP_LIMIT = 1500;
@@ -54,7 +55,30 @@ export default function Home() {
   const [availableZipcodes, setAvailableZipcodes] = useState<string[]>([]);
   const [states, setStates] = useState<StateOption[]>([]);
   const [cities, setCities] = useState<CityOption[]>([]);
+  const [claimedBillboardIds, setClaimedBillboardIds] = useState<Set<string>>(new Set());
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { user } = useUser();
+
+  const refetchClaimed = useCallback(() => {
+    fetch('/api/org-billboards?active=false')
+      .then((res) => (res.ok ? res.json() : { orgBillboards: [] }))
+      .then((data: { orgBillboards?: { billboard_id: string | null }[] }) => {
+        const ids = new Set<string>();
+        (data.orgBillboards ?? []).forEach((ob: { billboard_id: string | null }) => {
+          if (ob.billboard_id) ids.add(ob.billboard_id);
+        });
+        setClaimedBillboardIds(ids);
+      })
+      .catch(() => setClaimedBillboardIds(new Set()));
+  }, []);
+
+  useEffect(() => {
+    if (!user) {
+      setClaimedBillboardIds(new Set());
+      return;
+    }
+    refetchClaimed();
+  }, [user, refetchClaimed]);
 
   // Fetch states on mount
   useEffect(() => {
@@ -198,6 +222,8 @@ export default function Home() {
           billboard={selectedBillboard}
           onClose={handleClosePanel}
           onViewOnMap={selectedBillboard ? () => setFocusBillboard(selectedBillboard) : undefined}
+          isClaimed={selectedBillboard ? claimedBillboardIds.has(selectedBillboard.id) : false}
+          onClaimSuccess={refetchClaimed}
         />
       </div>
     </main>

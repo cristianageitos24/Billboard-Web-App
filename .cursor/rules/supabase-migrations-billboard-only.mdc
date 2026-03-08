@@ -1,0 +1,20 @@
+---
+description: Supabase migrations and MCP must target Billboard Web App only
+alwaysApply: true
+---
+
+# Supabase: Billboard Web App Only
+
+This workspace is for the **Billboard Web App**. When running or discussing Supabase migrations or database changes:
+
+1. **Target the correct project**  
+   All migrations and DDL must apply only to the **Billboard Web App** Supabase project (ref `ohqvtytcnddqokpsarmf`), not the AI Recipe App or any other project.
+
+2. **Use this project’s MCP for Supabase**  
+   When using Supabase MCP tools (`apply_migration`, `execute_sql`, `list_migrations`, etc.), use the MCP server that is configured for the **Billboard Web App** project. Do not run migrations or DDL via an MCP connected to a different project.
+
+3. **Prefer Supabase CLI from this repo**  
+   The safest way to run migrations is from this repo with the CLI: `npx supabase db push`, `npx supabase migration repair`, etc. The CLI is linked to the Billboard Web App here. Before using MCP for migrations, confirm the MCP is connected to the Billboard project.
+
+4. **Verify when in doubt**  
+   Run `npx supabase projects list` to see which project is linked (●). The Billboard Web App row should show the ● when you are in this repo.

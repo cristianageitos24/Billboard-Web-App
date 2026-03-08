@@ -2,11 +2,16 @@
 
 import { useState } from 'react';
 import type { BillboardListItem } from '@/types/billboard';
+import { useUser } from '@/hooks/useUser';
 
 type Props = {
   billboard: BillboardListItem | null;
   onClose: () => void;
   onViewOnMap?: () => void;
+  /** Whether this billboard is already in the current org's My Boards. */
+  isClaimed?: boolean;
+  /** Called after a successful claim so the parent can refresh claimed state. */
+  onClaimSuccess?: () => void;
 };
 
 function strProp(p: Record<string, unknown> | null, key: string): string {
@@ -35,8 +40,52 @@ function isBlipSource(sp: Record<string, unknown> | null): boolean {
   return !!(sp && ('daily_impressions' in sp || 'display_name' in sp));
 }
 
-export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }: Props) {
+export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap, isClaimed = false, onClaimSuccess }: Props) {
   const [permitDetailsOpen, setPermitDetailsOpen] = useState(false);
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [claimMonthlyCost, setClaimMonthlyCost] = useState('');
+  const [claimNotes, setClaimNotes] = useState('');
+  const { user, loading: userLoading } = useUser();
+
+  async function handleClaimSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!billboard || claimSubmitting) return;
+    setClaimError(null);
+    setClaimSubmitting(true);
+    const monthlyCost = claimMonthlyCost.trim() === '' ? null : Number(claimMonthlyCost);
+    if (monthlyCost !== null && (Number.isNaN(monthlyCost) || monthlyCost < 0)) {
+      setClaimError('Monthly cost must be a non-negative number.');
+      setClaimSubmitting(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/org-billboards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          billboard_id: billboard.id,
+          monthly_cost: monthlyCost,
+          notes: claimNotes.trim() || null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setClaimError(data.error ?? (res.status === 401 ? 'Please log in.' : 'Failed to add board.'));
+        setClaimSubmitting(false);
+        return;
+      }
+      setClaimModalOpen(false);
+      setClaimMonthlyCost('');
+      setClaimNotes('');
+      onClaimSuccess?.();
+      setClaimSubmitting(false);
+    } catch {
+      setClaimError('Something went wrong.');
+      setClaimSubmitting(false);
+    }
+  }
 
   if (!billboard) {
     return (
@@ -357,16 +406,94 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap }
         </div>
       ) : null}
       <div className="mt-6 pt-4 border-t border-neutral-200">
-        <button
-          type="button"
-          className="w-full py-2 px-3 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
-          disabled
-          aria-disabled="true"
-          title="Coming soon"
-        >
-          Add to My Boards
-        </button>
+        {userLoading ? (
+          <p className="text-sm text-neutral-500">Loading…</p>
+        ) : !user ? (
+          <button
+            type="button"
+            className="w-full py-2 px-3 rounded-md bg-neutral-300 text-neutral-600 text-sm font-medium cursor-not-allowed"
+            disabled
+            aria-disabled="true"
+            title="Log in to add to My Boards"
+          >
+            Add to My Boards
+          </button>
+        ) : isClaimed ? (
+          <p className="text-sm font-medium text-neutral-700 py-2">In My Boards</p>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setClaimError(null); setClaimModalOpen(true); }}
+            className="w-full py-2 px-3 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
+          >
+            Add to My Boards
+          </button>
+        )}
       </div>
+
+      {claimModalOpen && billboard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          aria-modal="true"
+          role="dialog"
+          aria-labelledby="claim-modal-title"
+        >
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-4">
+            <h3 id="claim-modal-title" className="text-lg font-semibold text-neutral-900 mb-3">
+              Add to My Boards
+            </h3>
+            <form onSubmit={handleClaimSubmit} className="space-y-3">
+              <div>
+                <label htmlFor="claim-monthly-cost" className="block text-sm font-medium text-neutral-700 mb-1">
+                  Monthly cost (optional)
+                </label>
+                <input
+                  id="claim-monthly-cost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={claimMonthlyCost}
+                  onChange={(e) => setClaimMonthlyCost(e.target.value)}
+                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm"
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label htmlFor="claim-notes" className="block text-sm font-medium text-neutral-700 mb-1">
+                  Notes (optional)
+                </label>
+                <textarea
+                  id="claim-notes"
+                  rows={2}
+                  value={claimNotes}
+                  onChange={(e) => setClaimNotes(e.target.value)}
+                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm resize-none"
+                  placeholder="Vendor contact, renewal date…"
+                />
+              </div>
+              {claimError && (
+                <p className="text-sm text-red-600" role="alert">{claimError}</p>
+              )}
+              <div className="flex gap-2 justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => { setClaimModalOpen(false); setClaimError(null); }}
+                  className="py-2 px-3 rounded-md border border-neutral-300 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={claimSubmitting}
+                  className="py-2 px-3 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-70"
+                >
+                  {claimSubmitting ? 'Adding…' : 'Add to My Boards'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }
