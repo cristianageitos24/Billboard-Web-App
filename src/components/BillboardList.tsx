@@ -167,7 +167,7 @@ export default function BillboardList({ billboards, selectedBillboard, onSelectB
         aria-label="Billboard list"
       >
         <div className="shrink-0 px-3 py-2 border-b border-neutral-200">
-          <h2 className="text-sm font-semibold text-neutral-800">Billboard locations</h2>
+          <h2 className="text-sm font-semibold text-neutral-800">Inventory</h2>
         </div>
         <div className="flex-1 overflow-auto">
           <p className="p-4 text-sm text-neutral-500">No billboards match the current filters.</p>
@@ -182,7 +182,7 @@ export default function BillboardList({ billboards, selectedBillboard, onSelectB
       aria-label="Billboard list"
     >
       <div className="shrink-0 px-3 py-2 border-b border-neutral-200">
-        <h2 className="text-sm font-semibold text-neutral-800">Billboard locations</h2>
+        <h2 className="text-sm font-semibold text-neutral-800">Inventory</h2>
       </div>
       <div
         ref={parentRef}

@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Houston Billboard Finder",
-  description: "Houston billboard inventory map for small law firms",
+  title: "MarketTrace",
+  description: "Track billboard spend and ROI in one place. Billboard marketing analytics and performance dashboard.",
 };
 
 export default function RootLayout({
@@ -30,9 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <GoogleMapsScriptLoader />
-        <header className="border-b border-neutral-200 dark:border-neutral-800">
-          <AuthNav />
-        </header>
+        <AuthNav />
         {children}
       </body>
     </html>

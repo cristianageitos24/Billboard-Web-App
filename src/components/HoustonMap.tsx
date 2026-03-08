@@ -202,7 +202,7 @@ export default function HoustonMap({ billboards, onSelectBillboard, focusBillboa
       <div
         className="w-full h-full min-h-[500px] rounded-lg flex items-center justify-center bg-neutral-100 text-neutral-600 text-sm"
         role="application"
-        aria-label="Houston billboard map"
+        aria-label="Billboard map"
       >
         <p>Set <code className="bg-neutral-200 px-1 rounded">NEXT_PUBLIC_GOOGLE_MAPS_API_KEY</code> in .env.local and restart the dev server.</p>
       </div>
@@ -214,7 +214,7 @@ export default function HoustonMap({ billboards, onSelectBillboard, focusBillboa
       ref={mapDivRef}
       className="w-full h-full min-h-[500px] rounded-lg"
       role="application"
-      aria-label="Houston billboard map"
+      aria-label="Billboard map"
     />
   );
 }

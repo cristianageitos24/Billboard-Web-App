@@ -9,13 +9,14 @@ export const PUBLIC_PATHS = [
   "/login",
   "/signup",
   "/auth/callback",
+  "/inventory",
 ] as const;
 
-/** Path prefixes that require auth when route protection is enabled (e.g. /dashboard, /account). */
+/** Path prefixes that require auth when route protection is enabled. */
 export const PROTECTED_PATH_PREFIXES = [
+  "/dashboard",
   "/my-boards",
-  // "/dashboard",
-  // "/account",
+  "/settings",
 ] as const;
 
 /** Public API path prefixes — read-only catalog; no auth required. */

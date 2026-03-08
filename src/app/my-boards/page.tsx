@@ -529,13 +529,13 @@ export default function MyBoardsPage() {
       <div className="border-b border-neutral-200 bg-white px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-sm text-neutral-600 hover:text-neutral-900 underline">
-              ← Back to map
+            <Link href="/dashboard" className="text-sm text-neutral-600 hover:text-neutral-900 underline">
+              ← Back to Dashboard
             </Link>
             <div>
               <h1 className="text-xl font-bold text-neutral-900">My Boards</h1>
               <p className="text-sm text-neutral-500 mt-0.5">
-                Boards you&apos;re tracking from the map and custom boards you&apos;ve added.
+                Boards you&apos;re tracking and the metrics that feed your ROI dashboard.
               </p>
             </div>
           </div>
@@ -581,15 +581,14 @@ export default function MyBoardsPage() {
           <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-10 text-center">
             <h2 className="text-lg font-semibold text-neutral-900 mb-2">No boards yet</h2>
             <p className="text-neutral-600 mb-6 max-w-sm mx-auto">
-              Add boards from the map inventory or add a custom board that isn&apos;t in our
-              inventory.
+              Add boards from inventory or add a custom board to start tracking performance.
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Link
-                href="/"
+                href="/inventory"
                 className="inline-block py-2 px-4 rounded-md border border-neutral-300 bg-white text-neutral-800 text-sm font-medium hover:bg-neutral-50"
               >
-                Browse map inventory
+                Browse inventory
               </Link>
               <button
                 type="button"
@@ -651,10 +650,10 @@ export default function MyBoardsPage() {
                     <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50/50 p-6 text-center">
                       <p className="text-sm text-neutral-500">No boards from inventory.</p>
                       <Link
-                        href="/"
+                        href="/inventory"
                         className="mt-2 inline-block text-sm font-medium text-neutral-700 hover:text-neutral-900 underline"
                       >
-                        Browse map
+                        Browse inventory
                       </Link>
                     </div>
                   ) : (

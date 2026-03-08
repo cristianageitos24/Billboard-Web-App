@@ -46,19 +46,18 @@ export default function DashboardPage() {
       <div className="border-b border-neutral-200 bg-white px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <Link
-              href="/"
-              className="text-sm text-neutral-600 hover:text-neutral-900 underline"
-            >
-              ← Back to map
-            </Link>
-            <h1 className="text-xl font-bold text-neutral-900 mt-1">
-              ROI Dashboard
+            <h1 className="text-xl font-bold text-neutral-900">
+              Dashboard
             </h1>
             <p className="text-sm text-neutral-500 mt-0.5">
-              See whether billboard marketing is working. Totals use your
-              organization&apos;s claimed boards and monthly metrics.
+              See how your billboard spend turns into leads and revenue. Use this view to decide where to invest or cut back.
             </p>
+            <Link
+              href="/inventory"
+              className="inline-block mt-2 text-sm text-neutral-600 hover:text-neutral-900 underline"
+            >
+              Browse inventory
+            </Link>
           </div>
         </div>
       </div>
@@ -97,9 +96,7 @@ export default function DashboardPage() {
         {!loading && data && !noMetricsAtAll && (
           <>
             <p className="text-sm text-neutral-500 mb-4">
-              Showing data for <strong>{periodLabel}</strong>. Spend = sum of
-              monthly cost for active boards. Leads, cases, and revenue from
-              metrics entered in My Boards.
+              Showing data for <strong>{periodLabel}</strong>. Spend = sum of monthly cost for active boards. Leads, cases, and revenue from metrics entered in My Boards. Use this data to compare months and boards.
             </p>
 
             <SummaryCardsGrid summary={data.summary} trends={trends} />

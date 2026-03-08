@@ -165,7 +165,7 @@ export default function FilterBar({ value, onChange, availableZipcodes = [], sta
             className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             aria-label="Filter by state"
           >
-            <option value="">All (Houston default)</option>
+            <option value="">All areas</option>
             {states.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}

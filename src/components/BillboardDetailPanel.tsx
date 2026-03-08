@@ -138,7 +138,7 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap, 
       aria-label="Billboard details"
     >
       <div className="flex justify-between items-start gap-2 mb-3">
-        <h2 className="text-lg font-semibold text-neutral-900">Board details</h2>
+        <h2 className="text-lg font-semibold text-neutral-900">Details</h2>
         <button
           type="button"
           onClick={onClose}
@@ -414,19 +414,19 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap, 
             className="w-full py-2 px-3 rounded-md bg-neutral-300 text-neutral-600 text-sm font-medium cursor-not-allowed"
             disabled
             aria-disabled="true"
-            title="Log in to add to My Boards"
+            title="Log in to track this board"
           >
-            Add to My Boards
+            Track this board
           </button>
         ) : isClaimed ? (
-          <p className="text-sm font-medium text-neutral-700 py-2">In My Boards</p>
+          <p className="text-sm font-medium text-neutral-700 py-2">Tracked</p>
         ) : (
           <button
             type="button"
             onClick={() => { setClaimError(null); setClaimModalOpen(true); }}
             className="w-full py-2 px-3 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
           >
-            Add to My Boards
+            Track this board
           </button>
         )}
       </div>
@@ -440,7 +440,7 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap, 
         >
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-4">
             <h3 id="claim-modal-title" className="text-lg font-semibold text-neutral-900 mb-3">
-              Add to My Boards
+              Track this board
             </h3>
             <form onSubmit={handleClaimSubmit} className="space-y-3">
               <div>
@@ -487,7 +487,7 @@ export default function BillboardDetailPanel({ billboard, onClose, onViewOnMap, 
                   disabled={claimSubmitting}
                   className="py-2 px-3 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800 disabled:opacity-70"
                 >
-                  {claimSubmitting ? 'Adding…' : 'Add to My Boards'}
+                  {claimSubmitting ? 'Adding…' : 'Track this board'}
                 </button>
               </div>
             </form>

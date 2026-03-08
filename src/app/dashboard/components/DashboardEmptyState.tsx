@@ -15,11 +15,11 @@ const COPY: Record<
 > = {
   no_metrics: {
     heading: "No data for this month",
-    body: "There are no metrics entered for this month. Add monthly metrics in My Boards for your claimed boards to see ROI and performance here.",
+    body: "Add monthly metrics in My Boards for your tracked boards to see ROI and performance here.",
   },
   no_boards: {
     heading: "No board metrics for this month",
-    body: "Add monthly metrics in My Boards for your claimed boards to see per-board ROI here.",
+    body: "Add monthly metrics in My Boards for your tracked boards to see per-board ROI here.",
   },
 };
 
