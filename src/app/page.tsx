@@ -160,17 +160,6 @@ export default function Home() {
       <header className="shrink-0 border-b border-neutral-200 bg-white px-6 py-3">
         <div className="flex items-center justify-between gap-4">
           <h1 className="text-xl font-bold text-neutral-900">Houston Billboard Finder</h1>
-          <nav className="flex items-center gap-6 text-sm text-neutral-600" aria-label="Main">
-            <a href="#" className="hover:text-neutral-900">Products</a>
-            <a href="#" className="hover:text-neutral-900">Resources</a>
-            <a href="#" className="hover:text-neutral-900">Log in</a>
-            <a
-              href="#"
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Get started
-            </a>
-          </nav>
         </div>
       </header>
 

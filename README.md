@@ -7,7 +7,8 @@ Next.js app for viewing Houston billboard inventory on a map (Phase 2: GeoJSON i
 Copy `.env.local.example` to `.env.local` and set:
 
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `SUPABASE_SECRET_KEY` — Service role key (API and seed script)
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — Publishable key (required for auth and client Supabase). From Dashboard → API Keys.
+- `SUPABASE_SECRET_KEY` — Secret key or legacy service_role key (API and seed script). From Dashboard → API Keys.
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` — For the map
 - `HOUSTON_CITY_ID` — Optional; defaults to `00000000-0000-0000-0000-000000000001`
 

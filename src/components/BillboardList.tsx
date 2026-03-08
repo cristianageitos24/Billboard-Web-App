@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, memo } from 'react';
+import { useEffect, useRef, memo, type Ref } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { BillboardListItem } from '@/types/billboard';
 
@@ -52,7 +52,7 @@ const BillboardListCard = memo(function BillboardListCard({
   billboard: BillboardListItem;
   isSelected: boolean;
   onSelect: (b: BillboardListItem) => void;
-  selectedRef?: (el: HTMLDivElement | null) => void;
+  selectedRef?: Ref<HTMLDivElement | null>;
 }) {
   const displayName = billboard.name ?? billboard.address ?? '—';
   const displayAddress = [billboard.address, billboard.zipcode].filter(Boolean).join(', ') || null;
@@ -155,7 +155,7 @@ export default function BillboardList({ billboards, selectedBillboard, onSelectB
     if (selectedBillboard && selectedRef.current) {
       const index = billboards.findIndex(b => b.id === selectedBillboard.id);
       if (index >= 0) {
-        virtualizer.scrollToIndex(index, { align: 'nearest', behavior: 'smooth' });
+        virtualizer.scrollToIndex(index, { align: 'auto', behavior: 'smooth' });
       }
     }
   }, [selectedBillboard, billboards, virtualizer]);
