@@ -18,7 +18,16 @@ export type DashboardROISummary = {
 
 export type DashboardROIBoardRow = {
   orgBillboardId: string;
+  /** Short stable token for tables (first 8 hex chars of UUID). */
+  displayId: string;
   name: string;
+  /** Address line for display (custom or inventory). */
+  location: string;
+  /** City from inventory join when available. */
+  city: string | null;
+  isActive: boolean;
+  /** True when a metrics row exists for this month (not defaulted zeros). */
+  hasMetrics: boolean;
   monthlyCost: number;
   spend: number;
   leads: number;
@@ -37,5 +46,7 @@ export type DashboardROIPeriod = {
 export type DashboardROIResponse = {
   period: DashboardROIPeriod;
   summary: DashboardROISummary;
+  /** Total org billboards (active + inactive); for empty states. */
+  orgBoardCount: number;
   boards: DashboardROIBoardRow[];
 };

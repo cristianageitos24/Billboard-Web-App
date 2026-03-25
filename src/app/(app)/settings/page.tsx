@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useUser } from '@/hooks/useUser';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -31,12 +30,7 @@ export default function SettingsPage() {
   return (
     <main className="min-h-screen flex flex-col">
       <div className="border-b border-neutral-200 bg-white px-6 py-4">
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="text-sm text-neutral-600 hover:text-neutral-900 underline">
-            ← Back to Dashboard
-          </Link>
-        </div>
-        <h1 className="text-xl font-bold text-neutral-900 mt-2">Settings</h1>
+        <h1 className="text-xl font-bold text-neutral-900">Settings</h1>
         <p className="text-sm text-neutral-500 mt-0.5">
           Manage your account and preferences.
         </p>

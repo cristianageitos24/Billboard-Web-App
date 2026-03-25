@@ -19,8 +19,8 @@ export type TrendItem = {
 export type DashboardTrends = {
   totalSpend: TrendItem | null;
   totalLeads: TrendItem | null;
-  totalSignedCases: TrendItem | null;
-  totalRevenue: TrendItem | null;
+  costPerLead: TrendItem | null;
+  roiMultiple: TrendItem | null;
 };
 
 function computeTrend(
@@ -53,6 +53,15 @@ function computeTrend(
   };
 }
 
+function computeTrendNullable(
+  current: number | null,
+  previous: number | null,
+  previousMonthLabel: string
+): TrendItem | null {
+  if (current == null || previous == null) return null;
+  return computeTrend(current, previous, previousMonthLabel);
+}
+
 function buildTrends(
   summary: DashboardROISummary,
   previousSummary: DashboardROISummary | null,
@@ -62,8 +71,8 @@ function buildTrends(
     return {
       totalSpend: null,
       totalLeads: null,
-      totalSignedCases: null,
-      totalRevenue: null,
+      costPerLead: null,
+      roiMultiple: null,
     };
   }
   return {
@@ -77,14 +86,14 @@ function buildTrends(
       previousSummary.totalLeads,
       previousMonthLabel
     ),
-    totalSignedCases: computeTrend(
-      summary.totalSignedCases,
-      previousSummary.totalSignedCases,
+    costPerLead: computeTrendNullable(
+      summary.costPerLead,
+      previousSummary.costPerLead,
       previousMonthLabel
     ),
-    totalRevenue: computeTrend(
-      summary.totalRevenue,
-      previousSummary.totalRevenue,
+    roiMultiple: computeTrendNullable(
+      summary.roiMultiple,
+      previousSummary.roiMultiple,
       previousMonthLabel
     ),
   };
@@ -115,12 +124,14 @@ export function useDashboardROI(
     setError(null);
     const prevMonth = previousMonth(month);
     try {
+      const q = `month=${encodeURIComponent(month)}&includeAllBoards=1`;
+      const pq = prevMonth
+        ? `month=${encodeURIComponent(prevMonth)}&includeAllBoards=1`
+        : "";
       const [currentRes, previousRes] = await Promise.all([
-        fetch(`/api/dashboard/roi?month=${encodeURIComponent(month)}`),
+        fetch(`/api/dashboard/roi?${q}`),
         prevMonth
-          ? fetch(
-              `/api/dashboard/roi?month=${encodeURIComponent(prevMonth)}`
-            )
+          ? fetch(`/api/dashboard/roi?${pq}`)
           : Promise.resolve(null),
       ]);
       if (!currentRes.ok) {
@@ -160,8 +171,8 @@ export function useDashboardROI(
       : {
           totalSpend: null,
           totalLeads: null,
-          totalSignedCases: null,
-          totalRevenue: null,
+          costPerLead: null,
+          roiMultiple: null,
         };
 
   const previousMonthLabel =

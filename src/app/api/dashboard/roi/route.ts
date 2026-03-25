@@ -57,6 +57,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const includeAllBoards =
+    searchParams.get("includeAllBoards") === "1" ||
+    searchParams.get("includeAllBoards") === "true";
+
   const supabase = await createClient();
 
   // Fetch all org billboards for the org (RLS restricts to current user's org).
@@ -64,7 +68,7 @@ export async function GET(request: NextRequest) {
   const { data: boardsData, error: boardsError } = await supabase
     .from("org_billboards")
     .select(
-      "id, custom_name, monthly_cost, is_active, billboards(name, address)"
+      "id, custom_name, custom_address, monthly_cost, is_active, billboards(name, address, cities(name))"
     )
     .order("created_at", { ascending: false });
 
@@ -78,15 +82,45 @@ export async function GET(request: NextRequest) {
   type BoardJoined = {
     name: string | null;
     address: string | null;
+    cities: { name: string } | { name: string }[] | null;
   };
   type BoardRow = {
     id: string;
     custom_name: string | null;
+    custom_address: string | null;
     monthly_cost: number | null;
     is_active: boolean;
     billboards: BoardJoined | BoardJoined[] | null;
   };
   const boards = (boardsData ?? []) as BoardRow[];
+
+  function shortDisplayId(id: string): string {
+    return id.replace(/-/g, "").slice(0, 8).toUpperCase();
+  }
+
+  function pickJoined(board: BoardRow): BoardJoined | null {
+    const j = board.billboards;
+    if (!j) return null;
+    return Array.isArray(j) ? j[0] ?? null : j;
+  }
+
+  function resolveLocation(board: BoardRow): string {
+    const ca = board.custom_address?.trim();
+    if (ca) return ca;
+    const joined = pickJoined(board);
+    const addr = joined?.address?.trim();
+    if (addr) return addr;
+    return "—";
+  }
+
+  function resolveCity(board: BoardRow): string | null {
+    const joined = pickJoined(board);
+    const c = joined?.cities;
+    if (!c) return null;
+    const city = Array.isArray(c) ? c[0] : c;
+    const n = city?.name?.trim();
+    return n || null;
+  }
 
   let metricsByBoard: Map<
     string,
@@ -132,11 +166,14 @@ export async function GET(request: NextRequest) {
     roiMultiple: totalSpend > 0 ? totalRevenue / totalSpend : null,
   };
 
-  // Board-level rows: only boards that have metrics for this month.
+  // Board-level rows: default only boards with metrics; includeAllBoards adds zeros for missing months.
   const boardRows: DashboardROIBoardRow[] = [];
   for (const board of boards) {
-    const m = metricsByBoard.get(board.id);
-    if (!m) continue;
+    const raw = metricsByBoard.get(board.id);
+    if (!includeAllBoards && !raw) continue;
+
+    const hasMetrics = raw != null;
+    const m = raw ?? { leads: 0, signedCases: 0, revenue: 0 };
 
     const monthlyCost = Number(board.monthly_cost) || 0;
     const spend = board.is_active ? monthlyCost : 0;
@@ -149,7 +186,12 @@ export async function GET(request: NextRequest) {
       (board.custom_name?.trim() || billboardName) ?? "—";
     boardRows.push({
       orgBillboardId: board.id,
+      displayId: shortDisplayId(board.id),
       name: displayName,
+      location: resolveLocation(board),
+      city: resolveCity(board),
+      isActive: board.is_active,
+      hasMetrics,
       monthlyCost,
       spend,
       leads: m.leads,
@@ -167,6 +209,7 @@ export async function GET(request: NextRequest) {
   const response: DashboardROIResponse = {
     period: { type: "month", month: monthDate },
     summary,
+    orgBoardCount: boards.length,
     boards: boardRows,
   };
 

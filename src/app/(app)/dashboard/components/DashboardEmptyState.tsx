@@ -15,11 +15,11 @@ const COPY: Record<
 > = {
   no_metrics: {
     heading: "No data for this month",
-    body: "Add monthly metrics in My Boards for your tracked boards to see ROI and performance here.",
+    body: "Add monthly metrics under Billboards to see ROI and performance here.",
   },
   no_boards: {
-    heading: "No board metrics for this month",
-    body: "Add monthly metrics in My Boards for your tracked boards to see per-board ROI here.",
+    heading: "No billboards added yet",
+    body: "Claim boards from inventory or add a custom location to start tracking spend and ROI.",
   },
 };
 
@@ -35,10 +35,10 @@ export function DashboardEmptyState({
       </h2>
       <p className="text-sm text-neutral-500 max-w-sm mx-auto mb-6">{body}</p>
       <Link
-        href="/my-boards"
+        href={reason === "no_boards" ? "/my-boards?add=1" : "/my-boards"}
         className="inline-block py-2 px-4 rounded-md bg-neutral-900 text-white text-sm font-medium hover:bg-neutral-800"
       >
-        Go to My Boards
+        {reason === "no_boards" ? "Add billboard" : "Go to Billboards"}
       </Link>
     </div>
   );

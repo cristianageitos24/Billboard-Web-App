@@ -17,6 +17,10 @@ export const PROTECTED_PATH_PREFIXES = [
   "/dashboard",
   "/my-boards",
   "/settings",
+  "/leads",
+  "/reports",
+  "/help",
+  "/billboards",
 ] as const;
 
 /** Public API path prefixes — read-only catalog; no auth required. */

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useOptimistic } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { useUser } from '@/hooks/useUser';
 import type { OrgBillboardWithBoard } from '@/types/org-billboard';
@@ -262,11 +263,31 @@ export default function MyBoardsPage() {
     window.location.href = `/login?next=${encodeURIComponent('/my-boards')}`;
   }, [userLoading, user]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('add') === '1') {
+      setAddCustomOpen(true);
+      setAddCustomError(null);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('add');
+      window.history.replaceState({}, '', url.pathname + url.search);
+    }
+  }, []);
+
+  const [optimisticBoards, applyToggleOptimistic] = useOptimistic(
+    orgBillboards,
+    (current, boardId: string) =>
+      current.map((ob) =>
+        ob.id === boardId ? { ...ob, is_active: !ob.is_active } : ob
+      )
+  );
+
   const filtered = useMemo(() => {
-    if (statusFilter === 'active') return orgBillboards.filter((ob) => ob.is_active);
-    if (statusFilter === 'inactive') return orgBillboards.filter((ob) => !ob.is_active);
-    return orgBillboards;
-  }, [orgBillboards, statusFilter]);
+    if (statusFilter === 'active') return optimisticBoards.filter((ob) => ob.is_active);
+    if (statusFilter === 'inactive') return optimisticBoards.filter((ob) => !ob.is_active);
+    return optimisticBoards;
+  }, [optimisticBoards, statusFilter]);
 
   const fromInventory = useMemo(
     () => filtered.filter((ob) => ob.billboard_id != null),
@@ -279,6 +300,7 @@ export default function MyBoardsPage() {
 
   async function handleToggleActive(ob: OrgBillboardWithBoard) {
     if (togglingId) return;
+    applyToggleOptimistic(ob.id);
     setTogglingId(ob.id);
     try {
       const res = await fetch(`/api/org-billboards/${ob.id}`, {
@@ -287,9 +309,18 @@ export default function MyBoardsPage() {
         body: JSON.stringify({ is_active: !ob.is_active }),
       });
       if (res.ok) {
+        toast.success(
+          ob.is_active ? 'Board marked inactive.' : 'Board marked active.'
+        );
         setConfirmInactiveId(null);
         fetchBoards();
+      } else {
+        toast.error('Could not update board.');
+        fetchBoards();
       }
+    } catch {
+      toast.error('Could not update board.');
+      fetchBoards();
     } finally {
       setTogglingId(null);
     }
@@ -324,11 +355,12 @@ export default function MyBoardsPage() {
       body: JSON.stringify(payload),
     });
     if (res.ok) {
+      toast.success('Board updated.');
       setEditingId(null);
       fetchBoards();
     } else {
       const data = await res.json().catch(() => ({}));
-      console.error(data.error ?? 'Update failed');
+      toast.error(typeof data.error === 'string' ? data.error : 'Update failed');
     }
   }
 
@@ -510,6 +542,7 @@ export default function MyBoardsPage() {
       }
       setAddCustomOpen(false);
       setAddCustomForm({ custom_name: '', custom_address: '', monthly_cost: '', notes: '' });
+      toast.success('Billboard added.');
       fetchBoards();
     } finally {
       setAddingCustom(false);
@@ -529,11 +562,8 @@ export default function MyBoardsPage() {
       <div className="border-b border-neutral-200 bg-white px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="text-sm text-neutral-600 hover:text-neutral-900 underline">
-              ← Back to Dashboard
-            </Link>
             <div>
-              <h1 className="text-xl font-bold text-neutral-900">My Boards</h1>
+              <h1 className="text-xl font-bold text-neutral-900">Billboards</h1>
               <p className="text-sm text-neutral-500 mt-0.5">
                 Boards you&apos;re tracking and the metrics that feed your ROI dashboard.
               </p>

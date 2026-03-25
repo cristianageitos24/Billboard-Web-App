@@ -12,7 +12,7 @@ export interface UseUserResult {
 
 /**
  * Shared auth hook: uses getUser() for initial load and onAuthStateChange for updates.
- * Use in AuthNav and any client component that needs the current user.
+ * Use in any client component that needs the current user.
  */
 export function useUser(): UseUserResult {
   const [user, setUser] = useState<User | null>(null);
